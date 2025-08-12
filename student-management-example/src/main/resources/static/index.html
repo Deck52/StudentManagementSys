@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management System</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom font and basic body styles */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+    <!-- Main container for the application -->
+    <div class="bg-white shadow-xl rounded-lg p-8 w-full max-w-4xl">
+        <!-- Application header -->
+        <h1 class="text-3xl font-bold text-gray-800 text-center mb-6">Student Management System</h1>
+
+        <!-- Form for adding and updating students -->
+        <form id="student-form" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Student ID input field -->
+                <div>
+                    <label for="student-id" class="block text-sm font-medium text-gray-700">Student ID</label>
+                    <input type="text" id="student-id" name="student-id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 transition duration-200 ease-in-out">
+                </div>
+                <!-- Student Name input field -->
+                <div>
+                    <label for="student-name" class="block text-sm font-medium text-gray-700">Student Name</label>
+                    <input type="text" id="student-name" name="student-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 transition duration-200 ease-in-out">
+                </div>
+                <!-- Student Marks input field -->
+                <div>
+                    <label for="student-marks" class="block text-sm font-medium text-gray-700">Marks</label>
+                    <input type="number" id="student-marks" name="student-marks" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 transition duration-200 ease-in-out">
+                </div>
+            </div>
+
+            <!-- Buttons for form actions -->
+            <div class="flex justify-center space-x-4">
+                <button type="submit" id="add-student-btn" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-200 ease-in-out">Add Student</button>
+                <button type="button" id="update-student-btn" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-200 ease-in-out">Update Student</button>
+            </div>
+        </form>
+
+        <!-- Message display area -->
+        <div id="message-area" class="mt-4 p-3 rounded-md hidden">
+            <!-- This area will be used to display success or error messages -->
+        </div>
+
+        <!-- Section for displaying the list of students -->
+        <div class="mt-8">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Student List</h2>
+            <div class="overflow-x-auto">
+                <table id="student-table" class="min-w-full divide-y divide-gray-200 rounded-md overflow-hidden shadow-sm">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Marks</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <!-- Student data will be inserted here by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get references to all the HTML elements we need to interact with
+        const studentForm = document.getElementById('student-form');
+        const studentIdInput = document.getElementById('student-id');
+        const studentNameInput = document.getElementById('student-name');
+        const studentMarksInput = document.getElementById('student-marks');
+        const addStudentBtn = document.getElementById('add-student-btn');
+        const updateStudentBtn = document.getElementById('update-student-btn');
+        const studentTableBody = document.querySelector('#student-table tbody');
+        const messageArea = document.getElementById('message-area');
+
+        // Function to display messages to the user
+        function showMessage(message, type = 'success') {
+            messageArea.textContent = message;
+            messageArea.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800');
+            if (type === 'success') {
+                messageArea.classList.add('bg-green-100', 'text-green-800');
+            } else {
+                messageArea.classList.add('bg-red-100', 'text-red-800');
+            }
+            // Hide the message after 5 seconds
+            setTimeout(() => {
+                messageArea.classList.add('hidden');
+            }, 5000);
+        }
+
+        // Function to render the student list in the table
+        function renderStudents(students) {
+            studentTableBody.innerHTML = ''; // Clear existing rows
+            if (students.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td colspan="4" class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">No students found.</td>`;
+                studentTableBody.appendChild(row);
+                return;
+            }
+
+            students.forEach(student => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${student.id}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${student.name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${student.marks}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button class="text-indigo-600 hover:text-indigo-900 mr-4 edit-btn" data-id="${student.id}">Edit</button>
+                        <button class="text-red-600 hover:text-red-900 delete-btn" data-id="${student.id}">Delete</button>
+                    </td>
+                `;
+                studentTableBody.appendChild(row);
+            });
+        }
+
+        // Function to fetch the student data from the backend
+        async function fetchStudents() {
+            try {
+                // This is a placeholder for your Java backend API endpoint
+                const response = await fetch('/api/students');
+                const students = await response.json();
+                renderStudents(students);
+            } catch (error) {
+                showMessage('Failed to fetch students. Please check the backend connection.', 'error');
+                console.error('Error fetching students:', error);
+            }
+        }
+
+        // Event listener for the "Add Student" button
+        studentForm.addEventListener('submit', async (e) => {
+            e.preventDefault(); // Prevent the form from submitting
+            const student = {
+                id: studentIdInput.value,
+                name: studentNameInput.value,
+                marks: parseFloat(studentMarksInput.value)
+            };
+
+            try {
+                // This is a placeholder for your Java backend API endpoint
+                const response = await fetch('/api/students', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(student)
+                });
+
+                if (response.ok) {
+                    showMessage('Student added successfully!');
+                    fetchStudents(); // Refresh the list
+                    studentForm.reset(); // Clear the form
+                } else {
+                    const errorData = await response.json();
+                    showMessage(`Error: ${errorData.message}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to add student. Please check the backend connection.', 'error');
+                console.error('Error adding student:', error);
+            }
+        });
+
+        // Event listener for the "Update Student" button
+        updateStudentBtn.addEventListener('click', async () => {
+            const studentId = studentIdInput.value;
+            const newMarks = parseFloat(studentMarksInput.value);
+
+            if (!studentId || isNaN(newMarks)) {
+                showMessage('Please enter a valid student ID and new marks.', 'error');
+                return;
+            }
+
+            try {
+                // This is a placeholder for your Java backend API endpoint
+                const response = await fetch(`/api/students/${studentId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ marks: newMarks })
+                });
+
+                if (response.ok) {
+                    showMessage('Student marks updated successfully!');
+                    fetchStudents();
+                    studentForm.reset();
+                } else {
+                    const errorData = await response.json();
+                    showMessage(`Error: ${errorData.message}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to update student. Please check the backend connection.', 'error');
+                console.error('Error updating student:', error);
+            }
+        });
+
+        // Event listener for "Edit" and "Delete" buttons in the table
+        studentTableBody.addEventListener('click', async (e) => {
+            if (e.target.classList.contains('delete-btn')) {
+                const studentId = e.target.dataset.id;
+                try {
+                    // This is a placeholder for your Java backend API endpoint
+                    const response = await fetch(`/api/students/${studentId}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (response.ok) {
+                        showMessage('Student deleted successfully!');
+                        fetchStudents();
+                    } else {
+                        const errorData = await response.json();
+                        showMessage(`Error: ${errorData.message}`, 'error');
+                    }
+                } catch (error) {
+                    showMessage('Failed to delete student. Please check the backend connection.', 'error');
+                    console.error('Error deleting student:', error);
+                }
+            } else if (e.target.classList.contains('edit-btn')) {
+                const studentId = e.target.dataset.id;
+                // Find the student's data from the table row
+                const row = e.target.closest('tr');
+                const studentName = row.children[1].textContent;
+                const studentMarks = row.children[2].textContent;
+
+                // Populate the form with the student's data for editing
+                studentIdInput.value = studentId;
+                studentNameInput.value = studentName;
+                studentMarksInput.value = studentMarks;
+            }
+        });
+
+        // Fetch students on page load
+        document.addEventListener('DOMContentLoaded', fetchStudents);
+    </script>
+</body>
+</html>
